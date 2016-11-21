@@ -98,8 +98,8 @@ def process_file(filename, database):
 db = None
 try:
     db = psycopg2.connect(host = 'localhost')
-except:
-    print('Cannot connect to the database, is Postgres running?')
+except psycopg2.OperationalError as e:
+    print(e)
     exit(1)
 
 # process files
