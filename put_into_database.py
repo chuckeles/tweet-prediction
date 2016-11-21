@@ -74,8 +74,10 @@ def process_file(filename, database):
                     cur.execute(query[0], query[1])
                     database.commit()
                     inserted_tweets += 1
-                except:
-                    print('Failed to insert the tweet %d into the database' % tweet_count)
+                except psycopg2.OperationalError as e:
+                    print('Failed to insert the tweet number %d:' % tweet_count)
+                    print(e)
+                    exit(1)
 
             tweet_count += 1
         else:
@@ -99,6 +101,7 @@ db = None
 try:
     db = psycopg2.connect(host = 'localhost')
 except psycopg2.OperationalError as e:
+    print('Failed to connect to the database:')
     print(e)
     exit(1)
 
@@ -111,3 +114,4 @@ db.close()
 
 # stats
 print('Processed %d files' % len(sys.argv[1:]))
+
