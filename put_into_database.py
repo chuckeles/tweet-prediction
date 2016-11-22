@@ -8,7 +8,7 @@ import helpers
 
 
 def process_file(filename, database):
-    print('Processing file %s' % filename)
+    helpers.log('Processing file %s' % filename)
     cur = database.cursor()
 
     # tweet attributes
@@ -49,8 +49,8 @@ def process_file(filename, database):
             tweet_content = line[2:-1]
 
             # print progress
-            if tweet_count % 5000 == 0:
-                print('Processed %.2f%% of tweets' % (tweet_count / total_amount * 100))
+            if tweet_count % 10000 == 0:
+                helpers.log('Processed %.2f%% of tweets' % (tweet_count / total_amount * 100))
 
             # check the language
             tokens = nltk.wordpunct_tokenize(tweet_content)
@@ -75,25 +75,25 @@ def process_file(filename, database):
                     database.commit()
                     inserted_tweets += 1
                 except psycopg2.OperationalError as e:
-                    print('Failed to insert the tweet number %d:' % tweet_count)
-                    print(e)
-                    exit(1)
+                    helpers.log('Failed to insert the tweet number %d:' % tweet_count)
+                    helpers.log(e)
+
+                    helpers.add_tweet('failed_tweets.txt', tweet_timestamp, tweet_user, tweet_content)
 
             tweet_count += 1
         else:
-            print('Unknown tweet attribute %s' % attr)
-            exit(1)
+            helpers.log('Unknown tweet attribute %s' % attr)
 
     # close the cursor
     cur.close()
 
     # print stats
-    print()
-    print('Stats:')
-    print('Dataset: %s' % filename)
-    print('Total tweets: %d' % tweet_count)
-    print('English tweets: %d' % english_tweets)
-    print('Inserted tweets: %d' % inserted_tweets)
+    helpers.log()
+    helpers.log('Stats:')
+    helpers.log('Dataset: %s' % filename)
+    helpers.log('Total tweets: %d' % tweet_count)
+    helpers.log('English tweets: %d' % english_tweets)
+    helpers.log('Inserted tweets: %d' % inserted_tweets)
 
 
 # connect to postgres
@@ -101,8 +101,8 @@ db = None
 try:
     db = psycopg2.connect(host = 'localhost')
 except psycopg2.OperationalError as e:
-    print('Failed to connect to the database:')
-    print(e)
+    helpers.log('Failed to connect to the database:')
+    helpers.log(e)
     exit(1)
 
 # process files
@@ -113,5 +113,5 @@ for file in sys.argv[1:]:
 db.close()
 
 # stats
-print('Processed %d files' % len(sys.argv[1:]))
+helpers.log('Processed %d files' % len(sys.argv[1:]))
 
