@@ -12,6 +12,7 @@ import guess_language as gl
 import nltk
 import sql
 import multiprocessing as mp
+import itertools as it
 
 
 processed_count = None
@@ -24,7 +25,13 @@ def process_file(filename):
     Process one dataset file concurrently.
     """
     with mp.Pool() as pool:
-        pool.map(process_tweet, helpers.lazy_read_tweets(filename))
+        tweets = helpers.lazy_read_tweets(filename)
+
+        # process tweets in chunks
+        while True:
+            res = pool.map(process_tweet, it.islice(tweets, mp.cpu_count()))
+            if not res:
+                break
 
 
 def process_tweet(tweet):
