@@ -1,3 +1,8 @@
+"""
+This is the old script to pull the tweets from a dataset and put
+the English ones into the database. It is single-threaded and slow.
+"""
+
 import sys
 import datetime
 import time
@@ -81,7 +86,7 @@ def process_file(filename, database):
                     helpers.log('Failed to insert the tweet number %d:' % tweet_id)
                     helpers.log(e)
 
-                    helpers.add_tweet('failed_tweets.txt', tweet_timestamp, tweet_user, tweet_content)
+                    helpers.write_tweet('failed_tweets.txt', tweet_timestamp, tweet_user, tweet_content)
         else:
             helpers.log('Unknown tweet attribute %s' % attr)
 

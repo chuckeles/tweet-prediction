@@ -1,8 +1,10 @@
 total number:10
 
+Garbage -.-
+
 T 2016-09-06 14:22:00
 U http://twitter.com/chuckeles
-W Let me test this content
+W Let me test this content.... It looks cooooool, while I'm testing this!
 
 T 2016-09-02 14:22:00
 U http://twitter.com/chuckeles1
@@ -10,7 +12,7 @@ W What is this huh?
 
 T 2016-09-03 14:22:00
 U http://twitter.com/chuckeles
-W Test tweet content
+W Test tweet content :D, He's SO confused lala
 
 T 2016-09-04 14:22:00
 U http://twitter.com/chuckeles
@@ -18,11 +20,11 @@ W Toto nie je angličtina...
 
 T 2016-09-12 14:22:00
 U http://twitter.com/chuckeles
-W What a NICE day o.O
+W What a NICE day o.O #awesome
 
 T 2016-09-16 14:22:00
 U http://twitter.com/chuckeles1
-W https://google.com <- check this
+W https://google.com <- check this, i already did and it was awesome
 
 T 2016-09-11 14:22:00
 U http://twitter.com/chuckeles
@@ -30,12 +32,14 @@ W Lol tweet content nice
 
 T 2016-09-17 14:22:00
 U http://twitter.com/chuckeles1
-W I can't believe this
+W I can't believe this #TAG <3
 
 T 2016-09-26 14:22:00
 U http://twitter.com/chuckeles
-W Just nope, let's not do this
+W @chuckeles Just nope, let's not do this, or done
 
 T 2016-09-22 14:22:00
 U http://twitter.com/chuckeles
-W Pure value
+W Pure value #ornot
+
+more GarBaGEEE -O-
