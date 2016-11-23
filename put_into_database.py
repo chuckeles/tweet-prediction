@@ -1,5 +1,6 @@
 import sys
 import datetime
+import time
 import sql
 import psycopg2
 import nltk
@@ -10,6 +11,7 @@ import helpers
 def process_file(filename, database):
     helpers.log('Processing file %s' % filename)
     cur = database.cursor()
+    start = time.perf_counter()
 
     # tweet attributes
     tweet_timestamp = None
@@ -49,8 +51,8 @@ def process_file(filename, database):
             tweet_content = line[2:-1]
 
             # print progress
-            if tweet_count % 10000 == 0:
-                helpers.log('Processed %.2f%% of tweets' % (tweet_count / total_amount * 100))
+            if tweet_count % 5000 == 0:
+                helpers.log('Processed %.3f%% of tweets' % (tweet_count / total_amount * 100))
 
             # check the language
             tokens = nltk.wordpunct_tokenize(tweet_content)
@@ -87,6 +89,12 @@ def process_file(filename, database):
     # close the cursor
     cur.close()
 
+    # measure performace
+    end = time.perf_counter()
+    duration = end - start
+    m, s = divmod(duration, 60)
+    h, m = divmod(m, 60)
+
     # print stats
     helpers.log()
     helpers.log('Stats:')
@@ -94,6 +102,7 @@ def process_file(filename, database):
     helpers.log('Total tweets: %d' % tweet_count)
     helpers.log('English tweets: %d' % english_tweets)
     helpers.log('Inserted tweets: %d' % inserted_tweets)
+    helpers.log('Total run time: %d:%d:%f' % (h, m, s))
 
 
 # connect to postgres

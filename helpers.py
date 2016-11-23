@@ -4,11 +4,11 @@ import datetime
 
 def lazy_read_file(filename):
     with io.open(filename, buffering = 1, encoding = 'utf-8') as file:
-        while file.readable():
-            yield file.readline()
+        for line in file:
+            yield line
 
 
-def log(string, log_file = 'log.txt'):
+def log(string = '', log_file = 'log.txt'):
     time_string = datetime.datetime.now().strftime('[%Y-%m-%d %H:%M:%S] ') + string
 
     print(time_string)
