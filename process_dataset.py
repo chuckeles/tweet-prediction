@@ -68,8 +68,8 @@ def process_tweet(tweet):
         length = len(content)
         words = list(filter(lambda word: word, content.split(' ')))
         word_count = len(words)
-        hashtags = list(filter(lambda word: word[0] == '#', words))
-        mentions = list(filter(lambda word: word[0] == '@', words))
+        hashtags = list(map(lambda word: word[1:], filter(lambda word: word[0] == '#', words)))
+        mentions = list(map(lambda word: word[1:], filter(lambda word: word[0] == '@', words)))
         urls = list(filter(lambda word: url_regex.match(word), words))
 
         # store in the database
