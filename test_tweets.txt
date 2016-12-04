@@ -20,7 +20,11 @@ W Toto nie je angličtina...
 
 T 2016-09-12 14:22:00
 U http://twitter.com/chuckeles
-W What a NICE day o.O #awesome
+W What a NICE day o.O #awesome http://twitter.com/
+
+T 2016-09-12 12:00:00
+U http://twitter.com/chuckeles99
+W No Post Title
 
 T 2016-09-16 14:22:00
 U http://twitter.com/chuckeles1
@@ -29,6 +33,10 @@ W https://google.com <- check this, i already did and it was awesome
 T 2016-09-11 14:22:00
 U http://twitter.com/chuckeles
 W Lol tweet content nice
+
+T 2016-11-11 14:22:00
+U http://twitter.com/chuckeles
+W Screwed   up ... punctuation!! LOL
 
 T 2016-09-17 14:22:00
 U http://twitter.com/chuckeles1

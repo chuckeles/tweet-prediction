@@ -9,15 +9,17 @@ import psycopg2 as pg
 import sys
 import time
 import guess_language as gl
-import nltk
 import sql
 import multiprocessing as mp
 import itertools as it
+import re
 
 
 processed_count = None
 inserted_count = None
 errored_count = None
+
+db = None
 
 
 def process_file(filename):
@@ -38,7 +40,7 @@ def process_tweet(tweet):
     """
     Process one tweet. This function is run by a worker.
     """
-    global processed_count, inserted_count, errored_count
+    global processed_count, inserted_count, errored_count, db
 
     try:
         with processed_count.get_lock():
@@ -51,37 +53,40 @@ def process_tweet(tweet):
         if tweet_id % 2000 == 0:
             helpers.log('Processed %.3f%% of tweets' % (tweet_id / total))
 
+        # remove empty tweets
+        if content == 'No Post Title':
+            return
+
         # guess the tweet language
         language = gl.guess_language(content)
         if language != 'en':
             return
 
-        # tokenize
-        tokens = nltk.tokenize.casual_tokenize(content, preserve_case = False, reduce_len = True)
+        # make stats
+        url_regex = re.compile('^https?://')
 
-        # filter out some punctuation and stop words
-        punc = ['.', ',', '!', '?']
-        stop_words = nltk.corpus.stopwords.words('english')
-        tokens = map(lambda token: ''.join(filter(lambda char: char not in punc, token)), tokens)
-        tokens = filter(lambda token: token and token not in stop_words, tokens)
-        tokens = list(tokens)
-
-        # stemming
-        stemmer = nltk.stem.PorterStemmer()
-        stems = map(lambda token: stemmer.stem(token), tokens)
-        stems = list(set(stems))
+        length = len(content)
+        words = list(filter(lambda word: word, content.split(' ')))
+        word_count = len(words)
+        hashtags = list(filter(lambda word: word[0] == '#', words))
+        mentions = list(filter(lambda word: word[0] == '@', words))
+        urls = list(filter(lambda word: url_regex.match(word), words))
 
         # store in the database
-        db = pg.connect(host = 'localhost')
+        if not db:
+            db = pg.connect(host = 'localhost')
+
         cur = db.cursor()
 
         table = sql.Table('tweets')
-        query = tuple(table.insert(columns = [table.timestamp, table.user, table.content, table.tokens, table.stems],
-                                   values = [[timestamp, user, content, tokens, stems]]))
+        query = tuple(
+            table.insert(
+                columns = [table.timestamp, table.user, table.length, table.words, table.hashtags, table.mentions,
+                           table.urls],
+                values = [[timestamp, user, length, word_count, hashtags, mentions, urls]]))
 
         cur.execute(query[0], query[1])
         db.commit()
-        db.close()
 
         with inserted_count.get_lock():
             inserted_count.value += 1
@@ -94,10 +99,12 @@ def process_tweet(tweet):
             errored_count.value += 1
 
 
-if __name__ == '__main__':
+def main():
     """
     Process the files on the input and show final statistics.
     """
+    global processed_count, inserted_count, errored_count
+
     # stats
     processed_count = mp.Value('i', 0)
     inserted_count = mp.Value('i', 0)
@@ -115,3 +122,7 @@ if __name__ == '__main__':
     helpers.log('Errored tweets: %d' % errored_count.value)
     helpers.log('Inserted tweets: %d' % inserted_count.value)
     helpers.log('Total run time: %d:%d:%.3f' % (h, m, s))
+
+
+if __name__ == '__main__':
+    main()
