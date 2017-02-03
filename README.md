@@ -25,3 +25,6 @@ CREATE TABLE "public"."tweets" (
     PRIMARY KEY ("id")
 );
 ```
+# Password
+
+Use a `.pgpass` file to store the password for the database. Don't forget to `chmod 0600 .pgpass`. [More information in the docs](https://www.postgresql.org/docs/current/static/libpq-pgpass.html).
