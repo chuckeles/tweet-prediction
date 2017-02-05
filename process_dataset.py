@@ -51,7 +51,7 @@ def process_tweet(tweet):
 
         # print progress
         if tweet_id % 2000 == 0:
-            helpers.log('Processed %.3f%% of tweets' % (tweet_id / total))
+            helpers.log('Processed %.3f%% of tweets' % (tweet_id / total * 100))
 
         # remove empty tweets
         if content == 'No Post Title':
