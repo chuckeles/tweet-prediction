@@ -1,4 +1,12 @@
+# cache and projects
 .idea/
 __pycache__/
-tweets2009-*
+.ipynb_checkpoints/
+
+# data
+data/
+
+# logs
 log.txt
+nohup.out
+
