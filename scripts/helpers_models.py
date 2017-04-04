@@ -40,7 +40,7 @@ def balance_data(data):
 def normalize_data(data):
     """ Normalize a dataset, divide all cells by column sums. """
 
-    return data.div(data.sum())
+    return data.div(data.sum()).fillna(0)
 
 
 def apply_time_decay(data, first_week, target_week):
