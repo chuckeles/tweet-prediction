@@ -9,7 +9,7 @@ from helpers_models import *
 
 
 class TargetMaker(BaseEstimator, TransformerMixin):
-    """ Adds a target column to the data. """
+    """ Adds a target column to the data. Can't be use for predictors. """
 
     def __init__(self, target_week):
         self.target_week = target_week
@@ -22,7 +22,7 @@ class TargetMaker(BaseEstimator, TransformerMixin):
 
 
 class ClassBalancer(BaseEstimator, TransformerMixin):
-    """ Balances the dataset so both classes have the same amount. """
+    """ Balances the dataset so both classes have the same amount. Can't be used for predictors. """
 
     def fit(self, data, target=None):
         return self
@@ -38,20 +38,27 @@ class Normalizer(BaseEstimator, TransformerMixin):
         self.target = pd.DataFrame()
 
     def fit(self, data, target=None):
-        # save the target so we can restore it later
-        self.target = pd.DataFrame(data['target'])
-
-        # fix the column indices
-        self.target.columns = pd.MultiIndex.from_tuples([(c, 0) for c in self.target])
+        # FIXME: This does not work as expected
+        # if 'target' in data:
+        #     # save the target so we can restore it later
+        #     self.target = pd.DataFrame(data['target'])
+        #
+        #     # fix the column indices
+        #     self.target.columns = pd.MultiIndex.from_tuples([(c, 0) for c in self.target])
 
         return self
 
     def transform(self, data):
-        # balance only input data
-        balanced = balance_data(data.drop('target', axis=1, level=0))
-
-        # concatenate with target
-        return pd.concat([balanced, self.target], axis=1)
+        # FIXME: This does not work as expected
+        # if 'target' in data:
+        #     # balance only input data
+        #     balanced = balance_data(data.drop('target', axis=1, level=0))
+        #
+        #     # concatenate with target
+        #     return pd.concat([balanced, self.target], axis=1)
+        #
+        # else:
+        return balance_data(data)
 
 
 class TimeDecayApplier(BaseEstimator, TransformerMixin):
