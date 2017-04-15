@@ -63,7 +63,7 @@ def pivot_dataset():
     # process categorical columns again - join back to strings
     for c in ['hashtags', 'mentions', 'urls']:
         print('Processing lists in ' + c)
-        pivot[c] = pivot[c].apply(lambda s: ','.join(s) if type(s) == list else '')
+        pivot[c] = pivot[c].applymap(lambda s: ','.join(s) if type(s) == list else None)
 
     print('The shape of the pivot table is %d by %d' % pivot.shape)
 
@@ -74,32 +74,74 @@ def pivot_dataset():
 
 def binarize_dataset():
     """ Binarize the whole dataset. Use the prepared data
-        and save the binarized data. """
+        and save the binarized data. Process the data in chunks. """
 
-    pass
+    print('Binarizing the dataset')
 
+    chunk_size = 10000
+    total_chunks = 8261630 / chunk_size
 
-def binarize(data: pd.SparseDataFrame, column: str):
-    """ Binarize a certain column. Save the new columns
-        back to the provided data frame, in place. """
+    # read the starting chunk
+    starting_chunk = 0
+    if len(sys.argv) >= 3:
+        starting_chunk = int(sys.argv[2])
+        print('Resuming from chunk %d' % starting_chunk)
 
-    # use the label binarizer to get the new columns
-    bin_columns = MultiLabelBinarizer(sparse_output=True).fit_transform(data[column].apply(lambda x: x.split('|')))
+    # start with loading
+    print('Loading the pivot_data.csv')
+    types = {'tweets': int, 'hashtags': str, 'mentions': str, 'urls': str}
+    data_chunks = pd.read_csv('../data/pivot_data.csv', header=[0, 1], index_col=0, chunksize=chunk_size, dtype=types)
 
-    # filter only most used values
-    usage = bin_columns.sum(0)
-    columns_with_high_usage = bin_columns[:, np.where(usage >= 200)[0]]
-    columns_with_low_usage = bin_columns[:, np.where(usage < 200)[0]]
-    has_other = columns_with_low_usage.sum(1).astype(bool).astype(int)
+    # process all chunks
+    for i, data in enumerate(data_chunks):
+        # skip chunks before the starting chunk
+        if i < starting_chunk:
+            print('Skipping chunk %d' % i)
+            continue
 
-    # insert back to the dataset
-    num_columns = columns_with_high_usage.shape[1]
+        print('\nPROCESSING CHUNK %d of %d\n' % (i, total_chunks))
 
-    data.drop(column, axis=1, inplace=True)
-    data[column + '_other'] = pd.SparseSeries(np.asarray(has_other).ravel(), fill_value=0)
+        print('Converting to sparse data frame')
+        data: pd.SparseDataFrame = data.to_sparse(0)
 
-    for i in range(num_columns):
-        data[column + '_' + str(i)] = pd.SparseSeries(columns_with_high_usage[:, i].toarray().ravel(), fill_value=0)
+        # swap levels so the week number is the first
+        print('Swapping levels')
+        data = data.swaplevel(axis=1).sort_index(1)
+
+        # store the minimum and the maximum week number for iterating later
+        first_week = int(data.columns.levels[0].min())
+        last_week = int(data.columns.levels[0].max())
+
+        # process all weeks
+        for week in range(first_week, last_week + 1):
+            print('\nProcessing week %d' % week)
+            chunk: pd.SparseDataFrame = data[[str(week)]]
+
+            # fix the columns
+            print('Removing week level from columns')
+            chunk.columns = chunk.columns.droplevel(0)
+
+            # get the dummy columns
+            print('Making dummies for hashtags')
+            dummies_hashtags = chunk['hashtags'].str.get_dummies(sep=',')
+            dummies_hashtags.columns = dummies_hashtags.columns.map(lambda c: 'hashtag_' + c)
+
+            print('Making dummies for mentions')
+            dummies_mentions = chunk['mentions'].str.get_dummies(sep=',')
+            dummies_mentions.columns = dummies_mentions.columns.map(lambda c: 'mention_' + c)
+
+            print('Making dummies for urls')
+            dummies_urls = chunk['urls'].str.get_dummies(sep=',')
+            dummies_urls.columns = dummies_urls.columns.map(lambda c: 'url_' + c)
+
+            # concatenate to one big data frame
+            print('Concatenating dummies and copying tweets')
+            dummies: pd.SparseDataFrame = pd.concat([dummies_hashtags, dummies_mentions, dummies_urls], axis=1)
+            dummies['tweets'] = chunk['tweets']
+
+            # save to a pickle
+            print('Saving')
+            dummies.to_pickle('../data/chunks/chunk_%d_week_%d.pkl' % (i, week))
 
 
 if __name__ == '__main__':
