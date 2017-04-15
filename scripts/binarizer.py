@@ -78,7 +78,7 @@ def binarize_dataset():
 
     print('Binarizing the dataset')
 
-    chunk_size = 10000
+    chunk_size = 100000
     total_chunks = 8261630 / chunk_size
 
     # read the starting chunk
@@ -126,13 +126,41 @@ def binarize_dataset():
             dummies_hashtags = chunk['hashtags'].str.get_dummies(sep=',')
             dummies_hashtags.columns = dummies_hashtags.columns.map(lambda c: 'hashtag_' + c)
 
+            # get rid of dummy columns with usage below 10
+            print('Filtering hashtag dummies')
+            usage = dummies_hashtags.sum(0)
+            high_usage = dummies_hashtags[np.where(usage >= 10)[0]]
+            low_usage = dummies_hashtags[np.where(usage < 10)[0]]
+            dummies_hashtags = high_usage
+            dummies_hashtags['other_hashtags'] = low_usage.sum(1)
+
+            print('There are %d hashtag columns' % dummies_hashtags.shape[1])
+
             print('Making dummies for mentions')
             dummies_mentions = chunk['mentions'].str.get_dummies(sep=',')
             dummies_mentions.columns = dummies_mentions.columns.map(lambda c: 'mention_' + c)
 
+            print('Filtering mention dummies')
+            usage = dummies_mentions.sum(0)
+            high_usage = dummies_mentions[np.where(usage >= 10)[0]]
+            low_usage = dummies_mentions[np.where(usage < 10)[0]]
+            dummies_mentions = high_usage
+            dummies_mentions['other_mentions'] = low_usage.sum(1)
+
+            print('There are %d mention columns' % dummies_mentions.shape[1])
+
             print('Making dummies for urls')
             dummies_urls = chunk['urls'].str.get_dummies(sep=',')
             dummies_urls.columns = dummies_urls.columns.map(lambda c: 'url_' + c)
+
+            print('Filtering url dummies')
+            usage = dummies_urls.sum(0)
+            high_usage = dummies_urls[np.where(usage >= 10)[0]]
+            low_usage = dummies_urls[np.where(usage < 10)[0]]
+            dummies_urls = high_usage
+            dummies_urls['other_urls'] = low_usage.sum(1)
+
+            print('There are %d url columns' % dummies_urls.shape[1])
 
             # concatenate to one big data frame
             print('Concatenating dummies and copying tweets')
