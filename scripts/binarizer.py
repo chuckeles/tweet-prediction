@@ -78,7 +78,7 @@ def binarize_dataset():
 
     print('Binarizing the dataset')
 
-    chunk_size = 100000
+    chunk_size = 2000
     total_chunks = 8261630 / chunk_size
 
     # read the starting chunk
@@ -86,6 +86,12 @@ def binarize_dataset():
     if len(sys.argv) >= 3:
         starting_chunk = int(sys.argv[2])
         print('Resuming from chunk %d' % starting_chunk)
+
+    # read the starting week
+    starting_week = 0
+    if len(sys.argv) >= 4:
+        starting_week = int(sys.argv[3])
+        print('Resuming from week %d' % starting_week)
 
     # start with loading
     print('Loading the pivot_data.csv')
@@ -114,6 +120,13 @@ def binarize_dataset():
 
         # process all weeks
         for week in range(first_week, last_week + 1):
+            # skip weeks before the starting week
+            if week < starting_week:
+                print('Skipping week %d' % week)
+                continue
+
+            starting_week = 0
+
             print('\nProcessing week %d' % week)
             chunk: pd.SparseDataFrame = data[[str(week)]]
 
