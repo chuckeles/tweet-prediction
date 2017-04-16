@@ -1,8 +1,9 @@
 import sys
+import pandas as pd
 from datetime import datetime
 from multiprocessing import Pool
-
-import pandas as pd
+from os import listdir
+from parse import parse
 
 
 def prepare_dataset():
@@ -211,6 +212,65 @@ def binarize_dataset():
             process.get()
 
 
+def merge_chunks():
+    """ Merge all created chunks to a single data frame. """
+
+    # find the last chunk generated
+    files = listdir('../data/chunks/')
+    files = list(map(lambda name: parse('chunk_{:d}_week_{:d}.pkl', name).fixed, files))
+
+    chunks = sorted(files, key=lambda cw: cw[0])
+    last_chunk = chunks[-1][0]
+
+    # make sure the last chunk has all weeks
+    while True:
+        print('Checking weeks of chunk %d' % last_chunk)
+
+        chunk_weeks = list(map(lambda c: c[1], filter(lambda c: c[0] == last_chunk, chunks)))
+
+        # check that all weeks from 23 to 36 are present
+        has_all_weeks = True
+        for week in range(23, 37):
+            if week not in chunk_weeks:
+                print('Missing week %d' % week)
+                has_all_weeks = False
+                break
+
+        if has_all_weeks:
+            break
+        else:
+            last_chunk -= 1
+
+    print('Merging chunks from 0 to %d' % last_chunk)
+
+    data_frames = []
+
+    # start loading the data and merging
+    for chunk_number in range(last_chunk + 1):
+        print('Adding chunk %d' % chunk_number)
+
+        weeks = []
+
+        # load weeks and merge them
+        for week in range(23, 37):
+            week_data = pd.read_pickle('../data/chunks/chunk_%d_week_%d.pkl' % (chunk_number, week))
+            weeks.append(week_data)
+
+        chunk = pd.concat(weeks, axis=1, keys=list(range(23, 37)))
+
+        # append to the data
+        data_frames.append(chunk)
+
+    # save the data
+    print('Concatenating chunks')
+    data: pd.SparseDataFrame = pd.concat(data_frames)
+    print('Saving the data with size %d by %d' % data.shape)
+    print('The type of the data is ' + str(type(data)))
+
+    data.fillna(0, inplace=True)
+    data.to_pickle('../data/binarized_data.pkl')
+
+
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         # by default, binarize the dataset
@@ -224,6 +284,9 @@ if __name__ == '__main__':
 
     elif sys.argv[1] == 'pivot':
         pivot_dataset()
+
+    elif sys.argv[1] == 'merge':
+        merge_chunks()
 
     else:
         print('Unknown action: ' + sys.argv[1])
