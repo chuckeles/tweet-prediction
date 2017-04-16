@@ -2,7 +2,6 @@ import sys
 from datetime import datetime
 from multiprocessing import Pool
 
-import numpy as np
 import pandas as pd
 
 
@@ -77,60 +76,64 @@ def process_chunk_week(chunk: pd.SparseDataFrame, chunk_number: int, week: int, 
     """ Asynchronously process the input data which is a
         certain week of a certain chunk. Save the result to a pickle file. """
 
-    print('\nProcessing week %d' % week)
+    print('[%d] Processing week %d' % (week, week))
 
     # fix the columns
-    print('Removing week level from columns')
+    print('[%d] Removing week level from columns' % week)
     chunk.columns = chunk.columns.droplevel(0)
 
-    # get the dummy columns
-    print('Making dummies for hashtags')
-    dummies_hashtags = chunk['hashtags'].str.get_dummies(sep=',')
-    dummies_hashtags.columns = dummies_hashtags.columns.map(lambda c: 'hashtag_' + c)
+    # get the dummy columns for hashtags
+    print('[%d] Making dummies for hashtags' % week)
+    dummies_hashtags: pd.SparseDataFrame = chunk['hashtags'].apply(
+        lambda v: v.lower() if type(v) == str else '').str.get_dummies(sep=',')
+    dummies_hashtags_values = dummies_hashtags.values
 
-    # get rid of dummy columns with usage below min_usage
-    print('Filtering hashtag dummies')
-    usage = dummies_hashtags.sum(0)
-    high_usage = dummies_hashtags[np.where(usage >= min_usage)[0]]
-    low_usage = dummies_hashtags[np.where(usage < min_usage)[0]]
-    dummies_hashtags = high_usage
-    dummies_hashtags['other_hashtags'] = low_usage.sum(1)
+    usage = dummies_hashtags_values.sum(0)
+    high_usage = usage >= min_usage
+    other = dummies_hashtags_values[:, usage < min_usage]
+    dummies_hashtags = pd.SparseDataFrame(dummies_hashtags_values[:, high_usage], dummies_hashtags.index,
+                                          dummies_hashtags.columns[high_usage].map(lambda c: 'hashtag_' + c))
+    dummies_hashtags['other_hashtags'] = other.sum(1)
 
-    print('There are %d hashtag columns' % dummies_hashtags.shape[1])
+    print('[%d] There are %d hashtag columns' % (week, dummies_hashtags.shape[1]))
 
-    print('Making dummies for mentions')
-    dummies_mentions = chunk['mentions'].str.get_dummies(sep=',')
-    dummies_mentions.columns = dummies_mentions.columns.map(lambda c: 'mention_' + c)
+    # get the dummy columns for mentions
+    print('[%d] Making dummies for mentions' % week)
+    dummies_mentions: pd.SparseDataFrame = chunk['mentions'].apply(
+        lambda v: v.lower() if type(v) == str else '').str.get_dummies(sep=',')
+    dummies_mentions_values = dummies_mentions.values
 
-    print('Filtering mention dummies')
-    usage = dummies_mentions.sum(0)
-    high_usage = dummies_mentions[np.where(usage >= min_usage)[0]]
-    low_usage = dummies_mentions[np.where(usage < min_usage)[0]]
-    dummies_mentions = high_usage
-    dummies_mentions['other_mentions'] = low_usage.sum(1)
+    usage = dummies_mentions_values.sum(0)
+    high_usage = usage >= min_usage
+    other = dummies_mentions_values[:, usage < min_usage]
+    dummies_mentions = pd.SparseDataFrame(dummies_mentions_values[:, high_usage], dummies_mentions.index,
+                                          dummies_mentions.columns[high_usage].map(lambda c: 'mention_' + c))
+    dummies_mentions['other_mentions'] = other.sum(1)
 
-    print('There are %d mention columns' % dummies_mentions.shape[1])
+    print('[%d] There are %d mention columns' % (week, dummies_mentions.shape[1]))
 
-    print('Making dummies for urls')
-    dummies_urls = chunk['urls'].str.get_dummies(sep=',')
-    dummies_urls.columns = dummies_urls.columns.map(lambda c: 'url_' + c)
+    # get the dummy columns for urls
+    print('[%d] Making dummies for urls' % week)
+    dummies_urls: pd.SparseDataFrame = chunk['urls'].apply(
+        lambda v: v.lower() if type(v) == str else '').str.get_dummies(sep=',')
+    dummies_urls_values = dummies_urls.values
 
-    print('Filtering url dummies')
-    usage = dummies_urls.sum(0)
-    high_usage = dummies_urls[np.where(usage >= min_usage)[0]]
-    low_usage = dummies_urls[np.where(usage < min_usage)[0]]
-    dummies_urls = high_usage
-    dummies_urls['other_urls'] = low_usage.sum(1)
+    usage = dummies_urls_values.sum(0)
+    high_usage = usage >= min_usage
+    other = dummies_urls_values[:, usage < min_usage]
+    dummies_urls = pd.SparseDataFrame(dummies_urls_values[:, high_usage], dummies_urls.index,
+                                      dummies_urls.columns[high_usage].map(lambda c: 'url_' + c))
+    dummies_urls['other_urls'] = other.sum(1)
 
-    print('There are %d url columns' % dummies_urls.shape[1])
+    print('[%d] There are %d url columns' % (week, dummies_urls.shape[1]))
 
     # concatenate to one big data frame
-    print('Concatenating dummies and copying tweets')
+    print('[%d] Concatenating dummies and copying tweets' % week)
     dummies: pd.SparseDataFrame = pd.concat([dummies_hashtags, dummies_mentions, dummies_urls], axis=1)
     dummies['tweets'] = chunk['tweets']
 
     # save to a pickle
-    print('Saving')
+    print('[%d] Saving' % week)
     dummies.to_pickle('../data/chunks/chunk_%d_week_%d.pkl' % (chunk_number, week))
 
 
@@ -141,9 +144,9 @@ def binarize_dataset():
     print('Binarizing the dataset')
 
     # constants
-    chunk_size = 4000
+    chunk_size = 2000
     total_chunks = 8261630 / chunk_size
-    min_usage = 4
+    min_usage = 10
 
     # read the starting chunk
     starting_chunk = 0
@@ -205,8 +208,7 @@ def binarize_dataset():
 
         # wait for the processes before moving to the next chunk
         for process in processes:
-            process.wait()
-
+            process.get()
 
 
 if __name__ == '__main__':
