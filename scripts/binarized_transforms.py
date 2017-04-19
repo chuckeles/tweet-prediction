@@ -10,7 +10,6 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 
 class TargetMaker(BaseEstimator, TransformerMixin):
-
     def __init__(self, target_week):
         self.target_week = target_week
 
@@ -60,12 +59,23 @@ class Normalizer(BaseEstimator, TransformerMixin):
     """ Normalizes the dataset so the sums per week are 1. Only normalizes
         columns that contain actual counts and ignores the binary columns. """
 
+    def __init__(self, ignore_binarized_columns=True, verbose=False):
+        self.ignore_binarized_columns = ignore_binarized_columns
+        self.verbose = verbose
+
     def fit(self, data, target=None):
         return self
 
     def transform(self, data):
         for week in data.columns.get_level_values(0):
-            for column in ['tweets', 'other_hashtags', 'other_mentions', 'other_urls']:
+            columns_to_process = ['tweets', 'other_hashtags', 'other_mentions', 'other_urls'] if \
+                self.ignore_binarized_columns else \
+                data.loc[:, [week]].columns.get_level_values(1)
+
+            for column in columns_to_process:
+                if self.verbose:
+                    print('Normalizing column', week, column)
+
                 column_sum = data[(week, column)].sum()
                 if column_sum > 0:
                     data[(week, column)] = data[(week, column)].div(column_sum).fillna(0)
@@ -77,18 +87,27 @@ class TimeDecayApplier(BaseEstimator, TransformerMixin):
     """ Apply a time decay on the data. Weeks that occurred
         further before the target will have less power. Ignore categorical columns. """
 
-    # TODO: Maybe transform all columns...
-
-    def __init__(self, target_week):
+    def __init__(self, target_week, ignore_binarized_columns=True, verbose=False):
         self.target_week = target_week
+        self.ignore_binarized_columns = ignore_binarized_columns
+        self.verbose = verbose
 
     def fit(self, data, target=None):
         return self
 
     def transform(self, data):
         for week in data.columns.get_level_values(0):
-            for column in ['tweets', 'other_hashtags', 'other_mentions', 'other_urls']:
-                data[(week, column)] = data[(week, column)] / np.sqrt(max(1, self.target_week - week))
+            columns_to_process = ['tweets', 'other_hashtags', 'other_mentions', 'other_urls'] if \
+                self.ignore_binarized_columns else \
+                data.loc[:, [week]].columns.get_level_values(1)
+
+            time_decay = np.sqrt(max(1, self.target_week - week))
+
+            for column in columns_to_process:
+                if self.verbose:
+                    print('Applying time-decay to column', week, column)
+
+                data[(week, column)] = data[(week, column)] / time_decay
 
         return data
 
