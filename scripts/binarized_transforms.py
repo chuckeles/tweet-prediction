@@ -62,8 +62,20 @@ class Normalizer(BaseEstimator, TransformerMixin):
     def __init__(self, ignore_binarized_columns=True, verbose=False):
         self.ignore_binarized_columns = ignore_binarized_columns
         self.verbose = verbose
+        self.column_sums = {}
 
     def fit(self, data, target=None):
+        for week in data.columns.get_level_values(0):
+            columns_to_process = ['tweets', 'other_hashtags', 'other_mentions', 'other_urls'] if \
+                self.ignore_binarized_columns else \
+                data.loc[:, [week]].columns.get_level_values(1)
+
+            for column in columns_to_process:
+                if self.verbose:
+                    print('Summing column', week, column)
+
+                self.column_sums[(data, week)] = data[(week, column)].sum()
+
         return self
 
     def transform(self, data):
@@ -76,9 +88,8 @@ class Normalizer(BaseEstimator, TransformerMixin):
                 if self.verbose:
                     print('Normalizing column', week, column)
 
-                column_sum = data[(week, column)].sum()
-                if column_sum > 0:
-                    data[(week, column)] = data[(week, column)].div(column_sum).fillna(0)
+                if self.column_sums[(data, week)] > 0:
+                    data[(week, column)] = data[(week, column)].div(self.column_sums[(data, week)]).fillna(0)
 
         return data
 
