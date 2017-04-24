@@ -74,7 +74,7 @@ class Normalizer(BaseEstimator, TransformerMixin):
                 if self.verbose:
                     print('Summing column', week, column)
 
-                self.column_sums[(data, week)] = data[(week, column)].sum()
+                self.column_sums[(week, column)] = data[(week, column)].sum()
 
         return self
 
@@ -88,8 +88,8 @@ class Normalizer(BaseEstimator, TransformerMixin):
                 if self.verbose:
                     print('Normalizing column', week, column)
 
-                if self.column_sums[(data, week)] > 0:
-                    data[(week, column)] = data[(week, column)].div(self.column_sums[(data, week)]).fillna(0)
+                if self.column_sums[(week, column)] > 0:
+                    data[(week, column)] = data[(week, column)].div(self.column_sums[(week, column)]).fillna(0)
 
         return data
 
