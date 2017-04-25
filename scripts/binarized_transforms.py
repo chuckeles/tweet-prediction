@@ -59,12 +59,16 @@ class Normalizer(BaseEstimator, TransformerMixin):
     """ Normalizes the dataset so the sums per week are 1. Only normalizes
         columns that contain actual counts and ignores the binary columns. """
 
-    def __init__(self, ignore_binarized_columns=True, verbose=False):
+    def __init__(self, ignore_binarized_columns=True, verbose=False, skip=False):
         self.ignore_binarized_columns = ignore_binarized_columns
         self.verbose = verbose
         self.column_sums = {}
+        self.skip = skip
 
     def fit(self, data, target=None):
+        if self.skip:
+            return self
+
         for week in data.columns.get_level_values(0):
             columns_to_process = ['tweets', 'other_hashtags', 'other_mentions', 'other_urls'] if \
                 self.ignore_binarized_columns else \
@@ -79,6 +83,9 @@ class Normalizer(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, data):
+        if self.skip:
+            return data
+
         for week in data.columns.get_level_values(0):
             columns_to_process = ['tweets', 'other_hashtags', 'other_mentions', 'other_urls'] if \
                 self.ignore_binarized_columns else \
@@ -98,15 +105,19 @@ class TimeDecayApplier(BaseEstimator, TransformerMixin):
     """ Apply a time decay on the data. Weeks that occurred
         further before the target will have less power. Ignore categorical columns. """
 
-    def __init__(self, target_week, ignore_binarized_columns=True, verbose=False):
+    def __init__(self, target_week, ignore_binarized_columns=True, verbose=False, skip=False):
         self.target_week = target_week
         self.ignore_binarized_columns = ignore_binarized_columns
         self.verbose = verbose
+        self.skip = skip
 
     def fit(self, data, target=None):
         return self
 
     def transform(self, data):
+        if self.skip:
+            return data
+
         for week in data.columns.get_level_values(0):
             columns_to_process = ['tweets', 'other_hashtags', 'other_mentions', 'other_urls'] if \
                 self.ignore_binarized_columns else \
