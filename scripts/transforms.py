@@ -44,10 +44,16 @@ class ClassBalancer(BaseEstimator, TransformerMixin):
 class Normalizer(BaseEstimator, TransformerMixin):
     """ Normalizes the dataset so the sums per week are 1. """
 
+    def __init__(self, skip=False):
+        self.skip = skip
+
     def fit(self, data, target=None):
         return self
 
     def transform(self, data):
+        if self.skip:
+            return data
+
         return hm.normalize_data(data)
 
 
@@ -55,13 +61,17 @@ class TimeDecayApplier(BaseEstimator, TransformerMixin):
     """ Apply a time decay on the data. Weeks that occurred
         further before the target will have less power. """
 
-    def __init__(self, target_week):
+    def __init__(self, target_week, skip=False):
         self.target_week = target_week
+        self.skip = skip
 
     def fit(self, data, target=None):
         return self
 
     def transform(self, data):
+        if self.skip:
+            return data
+
         min_week = data['tweets'].columns.min()
         return hm.apply_time_decay(data, min_week, self.target_week)
 

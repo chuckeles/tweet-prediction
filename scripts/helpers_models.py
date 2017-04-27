@@ -8,26 +8,29 @@ import numpy as np
 import pandas as pd
 
 
-def load_pivot_numbers():
+def load_pivot_numbers(values=None):
     """ Load the dataset with numbers only and make a pivot table. """
 
+    if values is None:
+        values = ['tweets', 'hashtags', 'mentions', 'urls']
+
     data = pd.read_csv('../data/data_numbers_only.csv')
-    return data.pivot_table(index='user', columns='week', values=['tweets', 'hashtags', 'mentions', 'urls'],
+    return data.pivot_table(index='user', columns='week', values=values,
                             aggfunc=np.sum, fill_value=0)
 
 
 def make_target(data, target_week):
     """ Create the target column. """
 
-    data['target'] = data['tweets'][target_week] > 0
+    data = data.assign(target=data['tweets'][target_week] > 0)
     return data.drop(target_week, axis=1, level=1)
 
 
 def balance_data(data):
     """ Make a balanced dataset. Active and inactive will have the same count. """
 
-    active = data[data['target'] == True]
-    inactive = data[data['target'] == False]
+    active = data[data['target']]
+    inactive = data[~data['target']]
 
     if active.shape[0] > inactive.shape[0]:
         active = active.sample(inactive.shape[0])
@@ -46,13 +49,15 @@ def normalize_data(data):
 def apply_time_decay(data, first_week, target_week):
     """ Apply a time decay effect on all columns. """
 
-    decay = data
+    decay = data.copy()
 
     for week in range(first_week, target_week):
-        decay.loc[:, ('tweets', week)] = decay['tweets'][week] / np.sqrt(target_week - week)
-        decay.loc[:, ('hashtags', week)] = decay['hashtags'][week] / np.sqrt(target_week - week)
-        decay.loc[:, ('mentions', week)] = decay['mentions'][week] / np.sqrt(target_week - week)
-        decay.loc[:, ('urls', week)] = decay['urls'][week] / np.sqrt(target_week - week)
+        divider = np.sqrt(target_week - week)
+
+        decay.loc[:, ('tweets', week)] = decay['tweets'][week] / divider
+        decay.loc[:, ('hashtags', week)] = decay['hashtags'][week] / divider
+        decay.loc[:, ('mentions', week)] = decay['mentions'][week] / divider
+        decay.loc[:, ('urls', week)] = decay['urls'][week] / divider
 
     return decay
 

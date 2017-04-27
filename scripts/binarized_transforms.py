@@ -17,8 +17,8 @@ class TargetMaker(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, data):
-        data['target'] = data[(self.target_week, 'tweets')] > 0
-        data.drop(self.target_week, axis=1, inplace=True)
+        data = data.assign(target=data[(self.target_week, 'tweets')] > 0)
+        data = data.drop(self.target_week, axis=1)
 
         return data
 
@@ -86,6 +86,8 @@ class Normalizer(BaseEstimator, TransformerMixin):
         if self.skip:
             return data
 
+        data = data.copy(deep=False)
+
         for week in data.columns.get_level_values(0):
             columns_to_process = ['tweets', 'other_hashtags', 'other_mentions', 'other_urls'] if \
                 self.ignore_binarized_columns else \
@@ -118,6 +120,8 @@ class TimeDecayApplier(BaseEstimator, TransformerMixin):
         if self.skip:
             return data
 
+        data = data.copy(deep=False)
+
         for week in data.columns.get_level_values(0):
             columns_to_process = ['tweets', 'other_hashtags', 'other_mentions', 'other_urls'] if \
                 self.ignore_binarized_columns else \
@@ -148,6 +152,6 @@ class WeeksLimiter(BaseEstimator, TransformerMixin):
     def transform(self, data):
         for week in data.columns.get_level_values(0):
             if week < self.start_week or week >= self.target_week:
-                data.drop(week, axis=1, inplace=True)
+                data = data.drop(week, axis=1)
 
         return data
